@@ -10,6 +10,11 @@ def get_user_details():
     st.text_input(key="PASSWORD", label="Password", type='password')
     username = get_or_default(dictionary=st.session_state, key="USERNAME", default=None)
     password = get_or_default(dictionary=st.session_state, key="PASSWORD", default=None)
-    if username is not None and password is not None:
-        get_user_level(username, password)
-    
+    if st.button("Login"):
+        if username is not None and password is not None:
+            whoami = get_user_level(username, password)
+            if whoami != "USER NOT FOUND":
+                st.toast("Login successfully")
+                st.rerun()
+            else:
+                st.toast("Invalid username or password")

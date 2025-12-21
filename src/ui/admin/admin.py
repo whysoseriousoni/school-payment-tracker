@@ -11,10 +11,11 @@ whoami = get_or_default(dictionary=st.session_state, key="USER_TYPE", default=Fa
 
 if not is_authenticated:
     get_user_details()
+    st.stop()
 
 if not is_admin:
-    if whoami=="ADMIN":
-        st.session_state['ADMIN_FLAG'] = True
-        st.rerun(scope="app")
+	if whoami=="ADMIN":
+		st.session_state['ADMIN_FLAG'] = True
+		st.rerun(scope="app")
 
-st.markdown(is_authenticated, is_admin, whoami,)
+st.markdown(f"{is_authenticated}, {is_admin}, {whoami}")
