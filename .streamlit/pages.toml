@@ -1,0 +1,42 @@
+[[pages]]
+name = "Main Section"
+icon = "🏠"
+is_section = true
+
+[[pages]]
+path = "/ui/index.py"
+name = "Home"
+icon = "🏠"
+
+
+[[pages]]
+name = "Billing Section"
+icon = "📃"
+is_section = true
+
+[[pages]]
+path = "/ui/billing/index.py"
+name = "Billing"
+icon = "📃"
+
+
+[[pages]]
+name = "Analytics Section"
+icon = "💸"
+is_section = true
+
+[[pages]]
+path = "/ui/analytics/summary.py"
+name = "Summary View"
+icon = "💸"
+
+
+[[pages]]
+name = "Admin Section"
+icon = "🤖"
+is_section = true
+
+[[pages]]
+path = "/ui/admin/admin.py"
+name = "Home"
+icon = "🏠"
