@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+from num2words import num2words
 import streamlit as st
 
 from alterlit.alternatives import date_input
@@ -38,8 +40,10 @@ BILLING_TYPES = [
     "Petrol Fee",
 ]
 
-# 
-billing_date = date_input(key="BILLING_DATE", label="Billing Date")
+#
+billing_date = date_input(
+    key="BILLING_DATE", label="Billing Date", max_value=datetime.now()
+)
 
 
 # "Custom Fee",
@@ -64,6 +68,17 @@ if billing_type == CUSTOM_BILLING_TYPE:
     billing_type = get_or_default(
         dictionary=st.session_state, key="CUSTOM_BILL_TYPE", default=""
     )
+
+billing_amount = st.number_input(
+    label="Bill Amount (₹)",
+    icon="💵",
+    min_value=0.0,
+    help="Enter Amount (INR)",
+    key="BILLING_AMOUNT",
+    format="%.2f",
+)
+
+st.text_input(label="Billing Amount in Words (₹)", value=f"₹ {num2words(billing_amount)}", disabled=True)
 
 if st.button(label="Create Bill"):
     st.toast("Bill Initiated")
