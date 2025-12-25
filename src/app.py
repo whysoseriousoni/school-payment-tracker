@@ -11,9 +11,9 @@ is_authenticated = get_or_default(dictionary=st.session_state, key="LOGGED_IN", 
 is_admin = get_or_default(dictionary=st.session_state, key="ADMIN_FLAG", default=False)
 whoami = get_or_default(dictionary=st.session_state, key="USER_TYPE", default=False)
 
-if not is_authenticated:
-    get_user_details()
-    st.stop()
+# if not is_authenticated:
+#     get_user_details()
+#     st.stop()
 
 nav = get_nav_from_toml(".streamlit/pages.toml")
 pg = st.navigation(nav)

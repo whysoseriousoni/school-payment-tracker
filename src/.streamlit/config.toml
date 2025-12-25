@@ -1,0 +1,16 @@
+[client]
+showErrorDetails = "full"
+
+[browser]
+gatherUsageStats = true
+
+[global]
+disableWidgetStateDuplicationWarning = false
+
+[server]
+headless = true
+enableXsrfProtection = true
+enableWebsocketCompression = false
+address = "0.0.0.0"
+maxUploadSize = 200
+maxMessageSize = 100

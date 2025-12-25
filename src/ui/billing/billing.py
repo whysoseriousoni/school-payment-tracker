@@ -1,5 +1,6 @@
 import streamlit as st
 
+from alterlit.alternatives import date_input
 from helper.utils import get_index_or_default, get_or_default
 from ui.login import get_user_details
 
@@ -11,9 +12,9 @@ is_authenticated = get_or_default(
 is_admin = get_or_default(dictionary=st.session_state, key="ADMIN_FLAG", default=False)
 whoami = get_or_default(dictionary=st.session_state, key="USER_TYPE", default=False)
 
-if not is_authenticated:
-    get_user_details()
-    st.stop()
+# if not is_authenticated:
+#     get_user_details()
+#     st.stop()
 
 ## ----- STUDENT SELECTION ----- ##
 
@@ -21,6 +22,7 @@ st.markdown("### Select Student Information")
 st.text_input(label="Enter Student ID", key="STUDENT_ID")
 st.text_input(label="Enter Student Name", key="STUDENT_NAME")
 
+st.divider()
 
 ## ----- BILLING SELECTION ----- ##
 
@@ -35,6 +37,11 @@ BILLING_TYPES = [
     "Lunch Fee",
     "Petrol Fee",
 ]
+
+# 
+billing_date = date_input(key="BILLING_DATE", label="Billing Date")
+
+
 # "Custom Fee",
 
 billing_type = get_or_default(
