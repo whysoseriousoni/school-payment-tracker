@@ -8,3 +8,7 @@ plotly==6.4.0
 matplotlib==3.10.7
 pydantic==2.12.4
 st-pages==1.0.1
+SQLAlchemy==2.0.46
+greenlet==3.3.1
+sqlmodel==0.0.31
+st-pydantic==0.3.1

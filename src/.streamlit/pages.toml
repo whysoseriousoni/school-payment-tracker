@@ -10,6 +10,16 @@ icon = "🏠"
 
 
 [[pages]]
+name = "Student Section"
+icon = "📃"
+is_section = true
+
+[[pages]]
+path = "ui/student/student.py"
+name = "Student Data"
+icon = "🧑🏾‍🎓"
+
+[[pages]]
 name = "Billing Section"
 icon = "📃"
 is_section = true
