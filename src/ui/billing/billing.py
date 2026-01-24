@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from num2words import num2words
+from sqlmodel import Session, create_engine
 import streamlit as st
 
 from alterlit.alternatives import date_input
+from data_management.BillingDetail import BillingDetail
 from helper.utils import get_index_or_default, get_or_default
 from ui.login import get_user_details
 
@@ -31,13 +33,14 @@ st.divider()
 BILLING_TYPES = [
     "Term Fee",
     "Van Fee",
-    "Exam Fee",
-    "Computer Fee",
     "Uniform Fee",
     "Book Fee",
-    "ID Fee",
-    "Lunch Fee",
     "Petrol Fee",
+    # Excluded as per requirement
+    # "Computer Fee",
+    # "Exam Fee",
+    # "ID Fee",
+    # "Lunch Fee",
 ]
 
 #
@@ -81,4 +84,18 @@ billing_amount = st.number_input(
 st.text_input(label="Billing Amount in Words (₹)", value=f"₹ {num2words(billing_amount)}", disabled=True)
 
 if st.button(label="Create Bill"):
-    st.toast("Bill Initiated")
+    st.toast("Initiating Bill Creation")
+    billing_detail = BillingDetail(
+        student_id=get_or_default(dictionary=st.session_state, key="", default=None),
+        student_name=get_or_default(dictionary=st.session_state, key="", default=None),
+        bill_date=get_or_default(dictionary=st.session_state, key="", default=None),
+        bill_type=get_or_default(dictionary=st.session_state, key="", default=None),
+        bill_amount=get_or_default(dictionary=st.session_state, key="BILLING_AMOUNT", default=None),
+        billing_amount_in_words=get_or_default(dictionary=st.session_state, key="", default=None),
+    )
+    engine = create_engine("sqlite:///data_store/database.db")
+    with Session(engine) as session:
+        session.add(billing_detail)
+    
+    
+    
