@@ -18,6 +18,7 @@ def date_input(key, label, default_value="today", max_value=None, *args, **kwarg
             key=key,
             value=default_value,
             format="YYYY/MM/DD",
+            min_value="1980-01-01",
             max_value=max_value,
         )
     with default_field_column:

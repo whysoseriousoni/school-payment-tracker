@@ -2,9 +2,11 @@ from datetime import datetime, timedelta
 from num2words import num2words
 from sqlmodel import Session, create_engine
 import streamlit as st
+import time as _time
 
 from alterlit.alternatives import date_input
 from data_management.BillingDetail import BillingDetail
+from data_management.sql_manager import get_engine
 from helper.utils import get_index_or_default, get_or_default
 from ui.login import get_user_details
 
@@ -81,21 +83,43 @@ billing_amount = st.number_input(
     format="%.2f",
 )
 
-st.text_input(label="Billing Amount in Words (₹)", value=f"₹ {num2words(billing_amount)}", disabled=True)
+billing_amount_in_words = num2words(
+    get_or_default(st.session_state, "BILLING_AMOUNT", default=0)
+)
+st.text_input(
+    label="Billing Amount in Words (₹)",
+    value=f"₹ {billing_amount_in_words}",
+    disabled=True,
+)
+
 
 if st.button(label="Create Bill"):
     st.toast("Initiating Bill Creation")
     billing_detail = BillingDetail(
-        student_id=get_or_default(dictionary=st.session_state, key="", default=None),
-        student_name=get_or_default(dictionary=st.session_state, key="", default=None),
-        bill_date=get_or_default(dictionary=st.session_state, key="", default=None),
-        bill_type=get_or_default(dictionary=st.session_state, key="", default=None),
-        bill_amount=get_or_default(dictionary=st.session_state, key="BILLING_AMOUNT", default=None),
-        billing_amount_in_words=get_or_default(dictionary=st.session_state, key="", default=None),
+        student_id=int(
+            get_or_default(dictionary=st.session_state, key="STUDENT_ID", default=None)
+        ),
+        student_name=get_or_default(
+            dictionary=st.session_state, key="STUDENT_NAME", default=None
+        ),
+        bill_date=get_or_default(
+            dictionary=st.session_state, key="BILLING_DATE", default=None
+        ),
+        bill_type=get_or_default(
+            dictionary=st.session_state, key="BILLING_TYPE", default=None
+        ),
+        bill_amount=get_or_default(
+            dictionary=st.session_state, key="BILLING_AMOUNT", default=None
+        ),
+        billing_amount_in_words=billing_amount_in_words,
     )
-    engine = create_engine("sqlite:///data_store/database.db")
-    with Session(engine) as session:
-        session.add(billing_detail)
     
-    
-    
+    with Session(get_engine()) as session:
+        try:
+            session.add(billing_detail)
+            session.commit()
+            st.toast("Bill saved successfully")
+            _time.sleep(3)
+            st.rerun()
+        except Exception as ex:
+            print(f"Error during writing to BillingDetail table | {ex}")

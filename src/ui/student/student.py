@@ -7,11 +7,12 @@ import streamlit as st
 
 from alterlit.alternatives import date_input
 from data_management.BillingDetail import BillingDetail
-from data_management.StudentBill import get_all_bills
+from data_management.StudentBill import get_all_bills, get_students
+from data_management.sql_manager import get_engine
 from helper.utils import get_index_or_default, get_or_default
 from ui.login import get_user_details
 import st_pydantic as sp
-from data_management.Student import Student, get_students
+from data_management.Student import Student
 
 st.markdown("# About Student Section")
 
@@ -241,7 +242,7 @@ with st.expander(label="### Add New Student Information", expanded=True):
                 default=None,
             ),
         )
-        engine = create_engine("sqlite:///data_store/database.db")
+        engine = get_engine()
         with Session(engine) as session:
             try:
                 session.add(new_student_detail)

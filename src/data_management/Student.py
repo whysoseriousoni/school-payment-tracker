@@ -1,20 +1,31 @@
-from typing import Optional
+from typing import List, Optional, TYPE_CHECKING
+from zoneinfo import ZoneInfo
 from sqlmodel import Field, Relationship, SQLModel, Session, create_engine, select
 from datetime import datetime, date
 
+from data_management.sql_manager import get_engine
 from helper.utils import sqlmodel_to_df
+
+if TYPE_CHECKING:
+    from data_management.BillingDetail import BillingDetail
 
 class Student(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     student_id: Optional[int] = Field(default=None, primary_key=True)
     student_name: str = Field(default=None)
     date_of_birth: Optional[date] = Field(default=None)
-    current_class: str = Field(default="UPDATE CURRENT CLASS", description="Updated every once year")
+    current_class: str = Field(
+        default="UPDATE CURRENT CLASS", description="Updated every once year"
+    )
 
-    date_of_joining: Optional[date] = Field(default=None, description="First Date of joining the school")
+    date_of_joining: Optional[date] = Field(
+        default=None, description="First Date of joining the school"
+    )
 
     # Last Date of relieve
-    date_of_relieve: Optional[date] = Field(default=None, description="Last Date of relieving the school")
+    date_of_relieve: Optional[date] = Field(
+        default=None, description="Last Date of relieving the school"
+    )
     # Promoted to next standard
     lkg_date_of_join: Optional[date] = Field(default=None)
     ukg_date_of_join: Optional[date] = Field(default=None)
@@ -30,21 +41,10 @@ class Student(SQLModel, table=True):
     class_10_date_of_join: Optional[date] = Field(default=None)
 
     inserted_on: Optional[datetime] = Field(
-        default=datetime.now(),
+        default_factory=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")),
     )
     modified_on: Optional[datetime] = Field(
-        default=datetime.now(),
+        default_factory=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")),
+        sa_column_kwargs={"onupdate": lambda: datetime.now(ZoneInfo("Asia/Kolkata"))},
     )
-
-
-def get_students(student_id:int=None):
-    engine = create_engine(f"sqlite:///data_store/database.db", echo=True)
-
-    with Session(engine) as session:
-        # Student
-        student_sql_statement = select(Student)
-        students = []
-        if student_id:
-            student_sql_statement.where(Student.student_id==student_id)
-        students = session.exec(student_sql_statement).fetchall()
-        return sqlmodel_to_df(students)
+    bills: List["BillingDetail"] = Relationship(back_populates="student")

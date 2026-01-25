@@ -1,18 +1,33 @@
 import sqlite3
 import os
 from sqlmodel import Field, Relationship, SQLModel, Session, create_engine
-
-from data_management.Student import Student
-from data_management.BillingDetail import BillingDetail
+import streamlit as st
 
 
-def create_new_sqlite(file_name="database"):
+@st.cache_resource
+def get_engine():
+    # This runs ONCE and the 'engine' is stored in memory
+    try:
+        return create_engine("sqlite:///data_store/database.db")
+    except:
+        raise RuntimeError("Unable to connect to SQLite engine")
+
+@st.cache_resource
+def create_and_register_sqlite():
     """
     Creates new database + Skeleton of tables
     """
-    engine = create_engine(f"sqlite:///data_store/{file_name}.db", echo=True)
-    SQLModel.metadata.create_all(engine)
+    # Add more SQL Models here
+    from data_management.Student import Student
+    from data_management.BillingDetail import BillingDetail
 
+    Student.model_rebuild()
+    BillingDetail.model_rebuild()
+    # End of adding model registries
+    
+    # Create if not exist:
+    engine = get_engine()
+    SQLModel.metadata.create_all(engine)
 
 def clone_sqlite_file(source_file_name, destination_file_name, backup_location=r"src\backup_and_restore", ):
     __source_connection__ = sqlite3.connect(source_file_name)
