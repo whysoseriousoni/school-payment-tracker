@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from num2words import num2words
 from sqlmodel import Session, create_engine
+from statics import BILLING_TYPES
 import streamlit as st
 import time as _time
 
@@ -32,18 +33,7 @@ st.divider()
 
 ## ----- BILLING SELECTION ----- ##
 
-BILLING_TYPES = [
-    "Term Fee",
-    "Van Fee",
-    "Uniform Fee",
-    "Book Fee",
-    "Petrol Fee",
-    # Excluded as per requirement
-    # "Computer Fee",
-    # "Exam Fee",
-    # "ID Fee",
-    # "Lunch Fee",
-]
+
 
 #
 billing_date = date_input(
@@ -56,10 +46,9 @@ billing_date = date_input(
 billing_type = get_or_default(
     dictionary=st.session_state, key="BILLING_TYPE", default=None
 )
-CUSTOM_BILLING_TYPE = "Custom Fee"
 
 st.selectbox(
-    options=[*BILLING_TYPES, CUSTOM_BILLING_TYPE],
+    options=[BILLING_TYPES],
     key="BILLING_TYPE",
     label="Choose Billing Type",
     index=get_index_or_default(
@@ -67,7 +56,7 @@ st.selectbox(
     ),
 )
 
-if billing_type == CUSTOM_BILLING_TYPE:
+if billing_type == BILLING_TYPES[-1]:
     # Overwrite
     st.text_input(label="Enter Billing Type", key="CUSTOM_BILL_TYPE")
     billing_type = get_or_default(
