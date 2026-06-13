@@ -6,6 +6,7 @@ def get_user_level(username, password):
         st.session_state["ADMIN_FLAG"] = True
         st.session_state["USER_TYPE"] = "ADMIN"
         return "ADMIN"
+
     elif str(username).upper()=="BILLING" and password=="SchoolBiller":
         st.session_state["LOGGED_IN"] = True
         st.session_state["ADMIN_FLAG"] = True
