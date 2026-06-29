@@ -1,13 +1,15 @@
 from typing import Optional, TYPE_CHECKING
 from zoneinfo import ZoneInfo
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 from datetime import datetime
 
+from helper.HashMixin import HashMixin
+
 if TYPE_CHECKING:
-    from data_management.Student import Student
+    from data_management.dao.Student import Student
 
 
-class BillingDetail(SQLModel, table=True):
+class BillingDetail(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(
         primary_key=True,
@@ -37,7 +39,7 @@ class BillingDetail(SQLModel, table=True):
     
     balance_amount_to_pay: float = Field(nullable=False)
     
-    
+     
     inserted_on: Optional[datetime] = Field(
         default_factory=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")),
     )
@@ -46,4 +48,4 @@ class BillingDetail(SQLModel, table=True):
         sa_column_kwargs={"onupdate": lambda: datetime.now(ZoneInfo("Asia/Kolkata"))},
     )
 
-    # student: Optional["Student"] = Relationship(back_populates="bills")
+    student: Optional["Student"] = Relationship(back_populates="bills")

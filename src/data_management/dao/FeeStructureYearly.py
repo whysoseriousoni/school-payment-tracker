@@ -3,10 +3,12 @@ from typing import List, Optional
 from zoneinfo import ZoneInfo
 from sqlmodel import Field, SQLModel
 
+from helper.HashMixin import HashMixin
 
-class GuardianDetails(SQLModel, table=True):
+
+class GuardianDetails(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)   
     student_class: str = Field(default="", nullable=False)
     
     

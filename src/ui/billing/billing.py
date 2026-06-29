@@ -6,7 +6,7 @@ import streamlit as st
 import time as _time
 
 from alterlit.alternatives import date_input
-from data_management.BillingDetail import BillingDetail
+from data_management.dao.BillingDetail import BillingDetail
 from data_management.sql_manager import get_engine
 from helper.utils import get_index_or_default, get_or_default
 from ui.login import get_user_details
@@ -28,12 +28,15 @@ whoami = get_or_default(dictionary=st.session_state, key="USER_TYPE", default=Fa
 st.markdown("### Select Student Information")
 st.text_input(label="Enter Student ID", key="STUDENT_ID")
 st.text_input(label="Enter Student Name", key="STUDENT_NAME")
+st.button(label="Enter Student Name", key="SELECT_STUDENT_BUTTON")
 
 st.divider()
 
+
+# Form
+
+
 ## ----- BILLING SELECTION ----- ##
-
-
 
 #
 billing_date = date_input(

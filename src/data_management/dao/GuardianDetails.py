@@ -1,8 +1,10 @@
 from typing import List, Optional, TYPE_CHECKING
 from sqlmodel import Field, SQLModel
 
+from helper.HashMixin import HashMixin
 
-class GuardianDetails(SQLModel, table=True):
+
+class GuardianDetails(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(default=None)
@@ -13,4 +15,4 @@ class GuardianDetails(SQLModel, table=True):
     year_of_birth: int = Field(
         default=None,
     )
-    student_ids = Optional[List[int]] = None
+    # student_ids: Optional[List[int]] = None

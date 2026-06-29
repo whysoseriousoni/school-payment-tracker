@@ -18,8 +18,8 @@ def create_and_register_sqlite():
     Creates new database + Skeleton of tables
     """
     # Add more SQL Models here
-    from data_management.Student import Student
-    from data_management.BillingDetail import BillingDetail
+    from data_management.dao.Student import Student
+    from data_management.dao.BillingDetail import BillingDetail
 
     Student.model_rebuild()
     BillingDetail.model_rebuild()

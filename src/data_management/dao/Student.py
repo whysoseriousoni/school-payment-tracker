@@ -4,12 +4,13 @@ from sqlmodel import Field, Relationship, SQLModel, Session, create_engine, sele
 from datetime import datetime, date
 
 from data_management.sql_manager import get_engine
+from helper.HashMixin import HashMixin
 from helper.utils import sqlmodel_to_df
 
 if TYPE_CHECKING:
-    from data_management.BillingDetail import BillingDetail
+    from data_management.dao.BillingDetail import BillingDetail
 
-class Student(SQLModel, table=True):
+class Student(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(default=None)
