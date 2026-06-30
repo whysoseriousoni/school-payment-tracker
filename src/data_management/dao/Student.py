@@ -25,7 +25,7 @@ class Student(HashMixin, SQLModel, table=True):
 
     identifier_id: Optional[str] = Field(default="")
     identifier_type: Optional[str] = Field(default="")
-    last_4_digit_of_identifier: Optional[int] = Field(default=None)
+    last_4_digit_of_identifier: Optional[str] = Field(default=None)
 
     category: Optional[str] = Field(default="")
     class_joined: Optional[str] = Field(default="")
