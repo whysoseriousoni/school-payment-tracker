@@ -36,3 +36,6 @@ def sqlmodel_to_df(objects: list[SQLModel]) -> pd.DataFrame:
     columns = list(objects[0].model_fields.keys()) 
     df = pd.DataFrame.from_records(records, columns=columns)
     return df
+
+def model_dump_with_prefix_alias(dumped_model: dict, prefix_alias: str):
+    return {f"{prefix_alias}_{k}": v for k, v in dumped_model.items()}
