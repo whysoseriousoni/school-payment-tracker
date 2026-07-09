@@ -19,3 +19,4 @@ class GuardianDetails(HashMixin, SQLModel, table=True):
         default_factory=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")),
         sa_column_kwargs={"onupdate": lambda: datetime.now(ZoneInfo("Asia/Kolkata"))},
     )
+    

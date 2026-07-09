@@ -4,7 +4,7 @@ from num2words import num2words
 import pandas as pd
 from sqlmodel import Session, create_engine
 import streamlit as st
-from statics import CLASSES
+from statics import CLASSES, USER_IDENTIFIER_TYPES, STUDENT_CATEGORY
 from alterlit.alternatives import date_input
 from data_management.dao.BillingDetail import BillingDetail
 from data_management.StudentBill import get_all_bills, get_students
@@ -30,24 +30,47 @@ whoami = get_or_default(dictionary=st.session_state, key="USER_TYPE", default=Fa
 
 st.markdown(body="## Add New Student Information")
 
-with st.expander(label="### Add New Student Information", expanded=True):
+with st.expander(label="Add New Student Information", expanded=True):
     student_name = st.text_input(
         key="NEW_STUDENT_NAME",
-        label="Student Name",
+        label="Student Name _(Required)_",
     )
+
     date_of_birth = date_input(
         key="NEW_STUDENT_DATE_OF_BIRTH",
-        label="Date Of Birth",
+        label="Date Of Birth _(Required)_",
         default_value=None,
         max_value=datetime.now(),
     )
+
+    new_student_class_joined = get_or_default(
+        dictionary=st.session_state, key="NEW_STUDENT_CLASS_JOINED", default=None
+    )
+    st.selectbox(
+        options=CLASSES,
+        key="NEW_STUDENT_CLASS_JOINED",
+        label="Class Joined _(Required)_",
+        index=get_index_or_default(
+            options=CLASSES,
+            search_for=new_student_class_joined,
+            default=0,
+        ),
+    )
+
+    date_of_joining = date_input(
+        key="NEW_STUDENT_DATE_OF_JOINING",
+        label="Date Of Joining _(Required)_",
+        default_value=None,
+        max_value=datetime.now(),
+    )
+    
     new_student_current_class = get_or_default(
         dictionary=st.session_state, key="NEW_STUDENT_CURRENT_CLASS", default=None
     )
     st.selectbox(
         options=CLASSES,
         key="NEW_STUDENT_CURRENT_CLASS",
-        label="Current Class",
+        label="Current Class _(Required)_",
         index=get_index_or_default(
             options=CLASSES,
             search_for=new_student_current_class,
@@ -55,179 +78,85 @@ with st.expander(label="### Add New Student Information", expanded=True):
         ),
     )
 
-    date_of_joining = date_input(
-        key="NEW_STUDENT_DATE_OF_JOINING",
-        label="Date Of Joining",
-        default_value=None,
-        max_value=datetime.now(),
+    new_student_category = get_or_default(
+        dictionary=st.session_state, key="NEW_STUDENT_CATEGORY", default=None
     )
-    date_of_relieve = date_input(
-        key="NEW_STUDENT_DATE_OF_RELIEVE",
-        label="Date Of Relieve",
-        default_value=None,
-        max_value=datetime.now(),
+    st.selectbox(
+        options=STUDENT_CATEGORY,
+        key="NEW_STUDENT_CATEGORY",
+        label="Category _(Required)_",
+        index=get_index_or_default(
+            options=STUDENT_CATEGORY,
+            search_for=new_student_category,
+            default=0,
+        ),
+    )
+    
+    
+    st.selectbox(
+        options=USER_IDENTIFIER_TYPES,
+        key="NEW_STUDENT_IDENTIFIER_TYPE",
+        label="Identifier Type _(Required)_",
+        index=get_index_or_default(
+            options=USER_IDENTIFIER_TYPES,
+            search_for="AADHAR",
+            default=0,
+        ),
+        disabled=True
+    )
+    
+    last_4_digit_of_identifier = st.text_input(
+        key="NEW_STUDENT_LAST_4_DIGIT_OF_IDENTIFIER",
+        label="Last 4 Digit of Identifier", max_chars=4, 
     )
 
-    lkg_date_of_join = date_input(
-        key="NEW_STUDENT_LKG_JOINING_DATE",
-        label="LKG Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    ukg_date_of_join = date_input(
-        key="NEW_STUDENT_UKG_JOINING_DATE",
-        label="UKG Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_1_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_1_JOINING_DATE",
-        label="CLASS 1 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_2_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_2_JOINING_DATE",
-        label="CLASS 2 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_3_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_3_JOINING_DATE",
-        label="CLASS 3 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_4_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_4_JOINING_DATE",
-        label="CLASS 4 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_5_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_5_JOINING_DATE",
-        label="CLASS 5 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_6_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_6_JOINING_DATE",
-        label="CLASS 6 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_7_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_7_JOINING_DATE",
-        label="CLASS 7 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_8_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_8_JOINING_DATE",
-        label="CLASS 8 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_9_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_9_JOINING_DATE",
-        label="CLASS 9 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
-    class_10_date_of_join = date_input(
-        key="NEW_STUDENT_CLASS_10_JOINING_DATE",
-        label="CLASS 10 Joining Date",
-        default_value=None,
-        max_value=datetime.now(),
-    )
     if st.button("Add New Student"):
         st.toast("Adding New Student ...")
+        new_student_detail = None
+        try:
+            st.toast("Trying to create new student record")
+            new_student_detail = Student(
+                name=get_or_default(
+                    dictionary=st.session_state, key="NEW_STUDENT_NAME", default=None
+                ),
+                date_of_birth=get_or_default(
+                    dictionary=st.session_state,
+                    key="NEW_STUDENT_DATE_OF_BIRTH",
+                    default=None,
+                ),
+                current_class=get_or_default(
+                    dictionary=st.session_state,
+                    key="NEW_STUDENT_CURRENT_CLASS",
+                    default=None,
+                ),
+                date_of_join=get_or_default(
+                    dictionary=st.session_state,
+                    key="NEW_STUDENT_DATE_OF_JOINING",
+                    default=None,
+                ),
+                identifier_type=get_or_default(
+                    dictionary=st.session_state,
+                    key="NEW_STUDENT_IDENTIFIER_TYPE",
+                    default="AADHAR",
+                ),
+                last_4_digit_of_identifier=get_or_default(
+                    dictionary=st.session_state,
+                    key="NEW_STUDENT_LAST_4_DIGIT_OF_IDENTIFIER",
+                    default=None,
+                ),
+                category=get_or_default(
+                    dictionary=st.session_state,
+                    key="NEW_STUDENT_CATEGORY",
+                    default=None,
+                ),
+                
+            )
+        except Exception as ex:
+            st.error("Unable to create new student record")
+            st.error("Populate required fields")
+            st.toast("Unable to create new student record")
+            st.stop()
 
-        new_student_detail = Student(
-            student_name=get_or_default(
-                dictionary=st.session_state, key="NEW_STUDENT_NAME", default=None
-            ),
-            date_of_birth=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_DATE_OF_BIRTH",
-                default=None,
-            ),
-            current_class=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CURRENT_CLASS",
-                default=None,
-            ),
-            date_of_joining=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_DATE_OF_JOINING",
-                default=None,
-            ),
-            date_of_relieve=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_DATE_OF_RELIEVE",
-                default=None,
-            ),
-            lkg_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_LKG_JOINING_DATE",
-                default=None,
-            ),
-            ukg_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_UKG_JOINING_DATE",
-                default=None,
-            ),
-            class_1_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_1_JOINING_DATE",
-                default=None,
-            ),
-            class_2_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_2_JOINING_DATE",
-                default=None,
-            ),
-            class_3_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_3_JOINING_DATE",
-                default=None,
-            ),
-            class_4_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_4_JOINING_DATE",
-                default=None,
-            ),
-            class_5_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_5_JOINING_DATE",
-                default=None,
-            ),
-            class_6_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_6_JOINING_DATE",
-                default=None,
-            ),
-            class_7_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_7_JOINING_DATE",
-                default=None,
-            ),
-            class_8_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_8_JOINING_DATE",
-                default=None,
-            ),
-            class_9_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_9_JOINING_DATE",
-                default=None,
-            ),
-            class_10_date_of_join=get_or_default(
-                dictionary=st.session_state,
-                key="NEW_STUDENT_CLASS_10_JOINING_DATE",
-                default=None,
-            ),
-        )
         engine = get_engine()
         with Session(engine) as session:
             try:
@@ -236,9 +165,9 @@ with st.expander(label="### Add New Student Information", expanded=True):
                 st.toast("Successfully added new Student")
                 st.toast("Resetting page")
                 _time.sleep(3)
-                st.rerun()
+                st.rerun(scope="app")
             except Exception as ex:
-                st.error(f"Error in adding new student {ex}")
+                st.error(f"Error in adding new student to database. Exception: {ex}")
                 print(ex)
 
 

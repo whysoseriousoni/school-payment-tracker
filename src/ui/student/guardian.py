@@ -7,7 +7,7 @@ import streamlit as st
 from statics import CLASSES
 from alterlit.alternatives import date_input
 from data_management.dao.BillingDetail import BillingDetail
-from data_management.StudentBill import get_all_bills, get_guardian, get_students
+from data_management.StudentBill import get_all_bills, get_guardians, get_students
 from data_management.sql_manager import get_engine
 from helper.utils import get_index_or_default, get_or_default
 from ui.login import get_user_details
@@ -246,4 +246,4 @@ st.divider()
 
 st.markdown("## All Student Information")
 
-st.dataframe(data=get_guardian())
+st.dataframe(data=get_guardians())

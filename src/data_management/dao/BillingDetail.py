@@ -48,4 +48,4 @@ class BillingDetail(HashMixin, SQLModel, table=True):
         sa_column_kwargs={"onupdate": lambda: datetime.now(ZoneInfo("Asia/Kolkata"))},
     )
 
-    student: Optional["Student"] = Relationship(back_populates="bills")
+    # student: Optional["Student"] = Relationship(back_populates="billingdetail",)

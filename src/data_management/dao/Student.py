@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class Student(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(default=None)
+    name: str
     date_of_birth: Optional[date] = Field(default=None)
     current_class: str = Field(
         default="UPDATE CURRENT CLASS", description="Updated every once year"
@@ -39,4 +39,4 @@ class Student(HashMixin, SQLModel, table=True):
         sa_column_kwargs={"onupdate": lambda: datetime.now(ZoneInfo("Asia/Kolkata"))},
     )
     
-    bills: List["BillingDetail"] = Relationship(back_populates="student")
+    # bills: List["BillingDetail"] = Relationship(back_populates="student")

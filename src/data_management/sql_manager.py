@@ -3,6 +3,8 @@ import os
 from sqlmodel import Field, Relationship, SQLModel, Session, create_engine
 import streamlit as st
 
+from helper.utils import sqlmodel_to_df
+
 
 @st.cache_resource
 def get_engine():
@@ -50,3 +52,12 @@ def clone_sqlite_file(source_file_name, destination_file_name, backup_location=r
 #     __connection__ = sqlite3.connect(database=database_name)
 #     return __connection__
 
+
+def execute_select(query):
+    try:
+        engine = get_engine()
+        with Session(engine) as session:
+            data = session.exec(query).fetchall()
+            return sqlmodel_to_df(data)
+    except Exception as ex:
+        return sqlmodel_to_df(objects=[])
