@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 class BillingDetail(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
+    __tablename__ = 'billing_details'
     id: Optional[int] = Field(
         primary_key=True,
         nullable=False,

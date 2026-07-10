@@ -8,6 +8,7 @@ from helper.HashMixin import HashMixin
 
 class GuardianDetails(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
+    __tablename__ = 'fee_structure_yearly'
     id: Optional[int] = Field(default=None, primary_key=True)   
     student_class: str = Field(default="", nullable=False)
     

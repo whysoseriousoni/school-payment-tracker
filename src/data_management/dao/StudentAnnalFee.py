@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 class StudentAnnalFee(HashMixin, SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
+    __tablename__ = 'student_annual_fee'
+
     id: Optional[int] = Field(default=None, primary_key=True)
     student_id: int = Field(nullable=False)
     
