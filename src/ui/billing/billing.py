@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from num2words import num2words
 from sqlmodel import Session, create_engine
 from data_management.StudentBill import get_complete_student_detail, get_students
-from statics import BILLING_TYPES
+from statics import BILLING_TYPES, PAYMENT_METHODS
 import streamlit as st
 import time as _time
 
@@ -84,11 +84,15 @@ with student_detail_section_column:
     
 
 with billing_section_column:
-    #
-    billing_date = date_input(
-        key="BILLING_DATE", label="Billing Date", max_value=datetime.now()
+    
+    billing_name = st.text_input(
+        key="BILLING_NAME", label="Billing Name (_Required_)",
     )
 
+    
+    billing_date = date_input(
+        key="BILLING_DATE", label="Billing Date (_Required_)", max_value=datetime.now()
+    )
 
     # "Custom Fee",
 
@@ -96,10 +100,11 @@ with billing_section_column:
         dictionary=st.session_state, key="BILLING_TYPE", default=None
     )
 
+
     st.selectbox(
         options=BILLING_TYPES,
         key="BILLING_TYPE",
-        label="Choose Billing Type",
+        label="Choose Billing Type (_Required_)",
         index=get_index_or_default(
             options=BILLING_TYPES, search_for=billing_type, default=0
         ),
@@ -112,8 +117,25 @@ with billing_section_column:
             dictionary=st.session_state, key="CUSTOM_BILL_TYPE", default=""
         )
 
+
+    billing_payment_method = get_or_default(
+        dictionary=st.session_state, key="BILLING_PAYMENT_METHOD", default=None
+    )
+    __payment_column_1, __payment_column_2 = st.columns([0.3, 0.7])
+    with __payment_column_1:
+        st.selectbox(
+            options=PAYMENT_METHODS,
+            key="BILLING_PAYMENT_METHOD",
+            label="Choose Payment Method (_Required_)",
+            index=get_index_or_default(
+                options=PAYMENT_METHODS, search_for=billing_payment_method, default=0
+            ),
+        )
+    with __payment_column_2:
+        st.text_area(label="Payment Notes", key="BILLING_PAYMENT_NOTES")
+
     billing_amount = st.number_input(
-        label="Bill Amount (₹)",
+        label="Bill Amount (₹) (_Required_)",
         icon="💵",
         min_value=0.0,
         help="Enter Amount (INR)",
@@ -129,6 +151,21 @@ with billing_section_column:
         value=f"₹ {billing_amount_in_words}",
         disabled=True,
     )
+    st.text_area(label="Notes", key="BILLING_NOTES")
+
+    st.text_input(
+        label="Balance Amount (₹)",
+        value=f"₹ 30000",
+        disabled=True,
+    )
+
+    st.text_input(
+        label="After Deducting Balance Amount (₹)",
+        value=f"₹ {30000-get_or_default(
+            dictionary=st.session_state, key="BILLING_AMOUNT", default=0
+        )}",
+        disabled=True,
+    )
 
 
 if st.button(label="Create Bill", use_container_width=True):
@@ -137,19 +174,32 @@ if st.button(label="Create Bill", use_container_width=True):
         student_id=int(
             get_or_default(dictionary=st.session_state, key="STUDENT_ID", default=None)
         ),
-        student_name=get_or_default(
-            dictionary=st.session_state, key="STUDENT_NAME", default=None
+        student_class=selected_student_current_class,
+        billing_name=get_or_default(
+            dictionary=st.session_state, key="BILLING_NAME", default=None
         ),
-        bill_date=get_or_default(
+        notes=get_or_default(
+            dictionary=st.session_state, key="BILLING_NOTES", default=None
+        ),
+        paid_on=get_or_default(
             dictionary=st.session_state, key="BILLING_DATE", default=None
         ),
-        bill_type=get_or_default(
-            dictionary=st.session_state, key="BILLING_TYPE", default=None
-        ),
-        bill_amount=get_or_default(
+        amount_paid=get_or_default(
             dictionary=st.session_state, key="BILLING_AMOUNT", default=None
         ),
-        billing_amount_in_words=billing_amount_in_words,
+        payment_method=get_or_default(
+            dictionary=st.session_state, key="BILLING_PAYMENT_METHOD", default=None
+        ),
+        payment_notes=get_or_default(
+            dictionary=st.session_state, key="BILLING_PAYMENT_NOTES", default=None
+        ),
+        amount_in_words=billing_amount_in_words,
+        balance_amount_to_pay=30000-get_or_default(
+            dictionary=st.session_state, key="BILLING_AMOUNT", default=0
+        ),
+        billing_type=get_or_default(
+            dictionary=st.session_state, key="BILLING_TYPE", default=None
+        ),
     )
     
     with Session(get_engine()) as session:

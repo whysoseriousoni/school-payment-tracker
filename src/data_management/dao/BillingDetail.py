@@ -22,20 +22,21 @@ class BillingDetail(HashMixin, SQLModel, table=True):
         nullable=False
     )
     
-    notes: str = Field(default="")
+    billing_name: str = Field(nullable=False) # Added
+    
+    notes: str = Field(default="") # 
     
     paid_on: Optional[datetime] = Field(
         default_factory=lambda: datetime.now(tz=ZoneInfo("Asia/Kolkata")),
-    )
+    ) # Added
     
-    amount_paid: float = Field(
-        nullable=False,
-    )
+    amount_paid: float = Field(nullable=False) # Added
     
-    payment_method: str = Field(default="")
-    payment_notes: str = Field(default="")
+    payment_method: str = Field(nullable=False) # Added
+    billing_type: str = Field(nullable=False) # Added
+    payment_notes: str = Field(nullable=False)
     
-    amount_in_words: str = Field(nullable=False)
+    amount_in_words: str = Field(nullable=False) # Added
     
     balance_amount_to_pay: float = Field(nullable=False)
     
