@@ -1,63 +1,119 @@
+"""
+Database access primitives: engine, sessions and file-level backup.
+
+The schema is owned by the migrations in `data_management/migrations`, never
+by `SQLModel.metadata.create_all()`. This module has no Streamlit dependency so
+it can be used from scripts, schedulers and tests.
+"""
 import sqlite3
-import os
-from sqlmodel import Field, Relationship, SQLModel, Session, create_engine
-import streamlit as st
+from contextlib import contextmanager
+from functools import lru_cache
+from pathlib import Path
+from typing import Iterator, Optional, Union
 
-from helper.utils import sqlmodel_to_df
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+from sqlmodel import Session, create_engine
+
+from config.settings import BACKUP_DIR, DB_PATH
+from helper.clock import now_ist
+from helper.logger import get_logger
+
+logger = get_logger(__name__)
+
+PathLike = Union[str, Path]
 
 
-@st.cache_resource
-def get_engine():
-    # This runs ONCE and the 'engine' is stored in memory
+def apply_connection_pragmas(dbapi_connection: sqlite3.Connection) -> None:
+    """Settings that SQLite applies per connection, not per database file."""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON")
+    cursor.execute("PRAGMA busy_timeout = 30000")
+    cursor.close()
+
+
+_engines_created: set = set()
+
+
+@lru_cache(maxsize=None)
+def _engine_for(db_path: str) -> Engine:
+    _engines_created.add(db_path)
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    engine = create_engine(
+        f"sqlite:///{db_path}",
+        connect_args={"check_same_thread": False, "timeout": 30},
+    )
+    event.listen(engine, "connect", lambda conn, _record: apply_connection_pragmas(conn))
+    return engine
+
+
+_active_db_path: Path = DB_PATH
+
+
+def set_database_path(db_path: PathLike) -> None:
+    """Point the application at another database file (tests, restore checks)."""
+    global _active_db_path
+    _active_db_path = Path(db_path)
+
+
+def get_database_path() -> Path:
+    return _active_db_path
+
+
+def get_engine(db_path: Optional[PathLike] = None) -> Engine:
+    """One shared engine per database file (cached for the process lifetime)."""
+    return _engine_for(str(Path(db_path or _active_db_path).resolve()))
+
+
+def dispose_engines() -> None:
+    """Close pooled connections (required before replacing the database file)."""
+    for engine_path in list(_engine_cache_keys()):
+        _engine_for(engine_path).dispose()
+
+
+def _engine_cache_keys():
+    return [key for key in _engines_created]
+
+
+@contextmanager
+def session_scope(db_path: Optional[PathLike] = None) -> Iterator[Session]:
+    """Transactional session: commits on success, rolls back and re-raises on error."""
+    session = Session(get_engine(db_path), expire_on_commit=False)
     try:
-        return create_engine("sqlite:///data_store/database.db")
-    except:
-        raise RuntimeError("Unable to connect to SQLite engine")
-
-@st.cache_resource
-def create_and_register_sqlite():
-    """
-    Creates new database + Skeleton of tables
-    """
-    # Add more SQL Models here
-    from data_management.dao.Student import Student
-    from data_management.dao.BillingDetail import BillingDetail
-
-    Student.model_rebuild()
-    BillingDetail.model_rebuild()
-    # End of adding model registries
-    
-    # Create if not exist:
-    engine = get_engine()
-    SQLModel.metadata.create_all(engine)
-
-def clone_sqlite_file(source_file_name, destination_file_name, backup_location=r"src\backup_and_restore", ):
-    __source_connection__ = sqlite3.connect(source_file_name)
-    __destination_connection__ = sqlite3.connect(f"{backup_location}\\{destination_file_name}")
-    try:
-        with __destination_connection__:
-            __source_connection__.backup(__destination_connection__, pages=-1)
-    except sqlite3.Error as e:
-        print(f"SQLite error during backup: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        logger.exception("Database transaction rolled back")
+        raise
     finally:
-        if __source_connection__:
-            __source_connection__.close()
-        if __destination_connection__:
-            __destination_connection__.close()
+        session.close()
 
 
-# def get_connector(file_name, database_name):
-#     __connection__ = sqlite3.connect(database=database_name)
-#     return __connection__
+def backup_database(
+    label: str = "manual",
+    destination_dir: Optional[PathLike] = None,
+    db_path: Optional[PathLike] = None,
+) -> Path:
+    """
+    Consistent snapshot of the live database using SQLite's online backup API
+    (safe while the app is running). Returns the path of the backup file.
+    """
+    source_path = Path(db_path or _active_db_path)
+    target_dir = Path(destination_dir or BACKUP_DIR)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    stem = f"{source_path.stem}_{label}_{now_ist():%Y%m%d_%H%M%S_%f}"
+    target_path, counter = target_dir / f"{stem}.db", 2
+    while target_path.exists():  # never overwrite an earlier backup
+        target_path, counter = target_dir / f"{stem}_{counter}.db", counter + 1
 
-
-def execute_select(query):
+    source = sqlite3.connect(source_path)
+    destination = sqlite3.connect(target_path)
     try:
-        engine = get_engine()
-        with Session(engine) as session:
-            data = session.exec(query).fetchall()
-            return sqlmodel_to_df(data)
-    except Exception as ex:
-        return sqlmodel_to_df(objects=[])
+        with destination:
+            source.backup(destination)
+    finally:
+        destination.close()
+        source.close()
+    logger.info("Database backed up to %s", target_path)
+    return target_path

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+logs/
+data_store/backups/
+data_store/*.db
+data_store/*.db-journal
+.streamlit/secrets.toml
+secrets/
+.env
+.venv/

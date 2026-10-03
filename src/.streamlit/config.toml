@@ -1,16 +1,22 @@
 [client]
-showErrorDetails = "full"
+# Never show stack traces to users; details go to logs/app.log.
+showErrorDetails = "none"
+toolbarMode = "minimal"
 
 [browser]
-gatherUsageStats = true
-
-[global]
-disableWidgetStateDuplicationWarning = false
+gatherUsageStats = false
 
 [server]
 headless = true
 enableXsrfProtection = true
-enableWebsocketCompression = false
 address = "0.0.0.0"
+port = 8501
 maxUploadSize = 200
 maxMessageSize = 100
+
+[theme]
+base = "light"
+primaryColor = "#1F5F8B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F1F5F9"
+textColor = "#1E2A35"
