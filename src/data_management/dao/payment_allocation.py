@@ -2,8 +2,10 @@ from typing import Optional
 
 from sqlmodel import Field, SQLModel
 
+from data_management.dao.base import TableBase
 
-class PaymentAllocation(SQLModel, table=True):
+
+class PaymentAllocation(TableBase, table=True):
     """How much of a payment went to a particular fee due. Immutable once written."""
 
     __tablename__ = "payment_allocation"

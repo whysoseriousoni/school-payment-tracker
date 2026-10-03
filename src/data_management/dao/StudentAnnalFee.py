@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 from sqlmodel import Field, Relationship, SQLModel, Session, create_engine, select
 from datetime import datetime, date
 
+from data_management.dao.base import TableBase
 from data_management.sql_manager import get_engine
 from helper.HashMixin import HashMixin
 from helper.utils import sqlmodel_to_df
@@ -10,7 +11,7 @@ from helper.utils import sqlmodel_to_df
 if TYPE_CHECKING:
     from data_management.dao.BillingDetail import BillingDetail
 
-class StudentAnnalFee(HashMixin, SQLModel, table=True):
+class StudentAnnalFee(HashMixin, TableBase, table=True):
     __table_args__ = {"extend_existing": True}
     __tablename__ = 'student_annual_fee'
 

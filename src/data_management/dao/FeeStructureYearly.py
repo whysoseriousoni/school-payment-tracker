@@ -3,10 +3,11 @@ from typing import List, Optional
 from zoneinfo import ZoneInfo
 from sqlmodel import Field, SQLModel
 
+from data_management.dao.base import TableBase
 from helper.HashMixin import HashMixin
 
 
-class GuardianDetails(HashMixin, SQLModel, table=True):
+class GuardianDetails(HashMixin, TableBase, table=True):
     __table_args__ = {"extend_existing": True}
     __tablename__ = 'fee_structure_yearly'
     id: Optional[int] = Field(default=None, primary_key=True)   

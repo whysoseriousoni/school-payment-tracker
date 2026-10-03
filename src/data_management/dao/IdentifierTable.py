@@ -2,10 +2,11 @@
 from typing import List, Optional
 from sqlmodel import Field, SQLModel
 
+from data_management.dao.base import TableBase
 from helper.HashMixin import HashMixin
 
 
-class IdentifierTable(HashMixin, SQLModel, table=True):
+class IdentifierTable(HashMixin, TableBase, table=True):
     __table_args__ = {"extend_existing": True}
     __tablename__ = 'identifier_table'
 

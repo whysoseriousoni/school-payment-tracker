@@ -1,7 +1,9 @@
 from sqlmodel import Field, SQLModel
 
+from data_management.dao.base import TableBase
 
-class ReceiptCounter(SQLModel, table=True):
+
+class ReceiptCounter(TableBase, table=True):
     """Last receipt number issued per academic year (RCPT/2026-27/00001 ...)."""
 
     __tablename__ = "receipt_counter"

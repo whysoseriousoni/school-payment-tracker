@@ -3,13 +3,14 @@ from zoneinfo import ZoneInfo
 from sqlmodel import Field, Relationship, SQLModel
 from datetime import datetime
 
+from data_management.dao.base import TableBase
 from helper.HashMixin import HashMixin
 
 if TYPE_CHECKING:
     from data_management.dao.Student import Student
 
 
-class BillingDetail(HashMixin, SQLModel, table=True):
+class BillingDetail(HashMixin, TableBase, table=True):
     __table_args__ = {"extend_existing": True}
     __tablename__ = 'billing_details'
     id: Optional[int] = Field(

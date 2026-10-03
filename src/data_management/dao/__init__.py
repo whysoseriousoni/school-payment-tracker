@@ -11,7 +11,7 @@ from data_management.dao.identifier import Identifier
 from data_management.dao.payment import Payment
 from data_management.dao.payment_allocation import PaymentAllocation
 from data_management.dao.receipt_counter import ReceiptCounter
-from data_management.dao.student import Student
+from data_management.dao.Student import Student
 from data_management.dao.student_enrollment import StudentEnrollment
 from data_management.dao.student_fee_due import StudentFeeDue
 from data_management.dao.student_guardian import StudentGuardian

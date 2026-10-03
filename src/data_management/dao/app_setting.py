@@ -1,10 +1,11 @@
 from pydantic import NaiveDatetime
 from sqlmodel import Field, SQLModel
 
+from data_management.dao.base import TableBase
 from helper.clock import now_ist
 
 
-class AppSetting(SQLModel, table=True):
+class AppSetting(TableBase, table=True):
     """Key/value application settings (school name, address, ...)."""
 
     __tablename__ = "app_setting"

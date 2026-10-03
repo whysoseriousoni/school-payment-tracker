@@ -1,10 +1,11 @@
 from typing import List, Optional, TYPE_CHECKING
 from sqlmodel import Field, SQLModel
 
+from data_management.dao.base import TableBase
 from helper.HashMixin import HashMixin
 
 
-class GuardianDetails(HashMixin, SQLModel, table=True):
+class GuardianDetails(HashMixin, TableBase, table=True):
     __table_args__ = {"extend_existing": True}
     __tablename__ = "guardian_details"
     
