@@ -13,11 +13,11 @@ from data_management.dto.student import (
     StudentSearch,
     StudentUpdate,
 )
-from data_management.services import academic_year_service, guardian_service, student_service
+from data_management.services import academic_year_service, fee_service, guardian_service, student_service
 from data_management.services.identifier_crypto import mask
 from helper.clock import today_ist
-from statics import CLASSES, GUARDIAN_TYPES, SECTIONS, STUDENT_CATEGORY, StudentStatus
-from ui.common import flash, optional_select, page_header, require_user, run_action, rupee_input, term_select
+from statics import CLASSES, GUARDIAN_TYPES, SECTIONS, STUDENT_CATEGORY, FeeType, StudentStatus
+from ui.common import flash, optional_select, page_header, require_user, run_action, rupees, term_select
 
 KEY_SELECTED = "stu_selected_id"
 
@@ -26,7 +26,7 @@ page_header("Students")
 years = academic_year_service.list_years()
 current_year = next((y for y in years if y.is_current), years[0] if years else None)
 if current_year is None:
-    st.warning("Create an academic year first (Admin > Terms & fees).")
+    st.warning("Create an academic year first (Admin > Terms & school).")
     st.stop()
 
 
@@ -209,7 +209,7 @@ def manage_student(profile: StudentProfile) -> None:
         else:
             if st.button("Re-activate student", key=f"stu_reactivate_{pid}"):
                 run_action(student_service.reactivate, pid)
-                flash("Student re-activated. Re-add any fees needed from Collect fees or Admin > Terms & fees.")
+                flash("Student re-activated. Re-assign the fee plan from Collect fees or Admin > Fee plans.")
                 st.rerun()
         if user.is_admin:
             st.markdown("---")
@@ -233,8 +233,14 @@ tab_find, tab_add, tab_roll = st.tabs(["Find & manage", "Add student", "Roll num
 
 # ------------------------------------------------------------------ add
 with tab_add:
-    st.caption("Choose how the guardian will be added first - the form below adjusts to your choice.")
-    add_guardian_mode = guardian_mode_selector("stu_add")
+    st.caption("Choose the term and how the guardian will be added first - the form below adjusts to your choice.")
+    pre1, pre2 = st.columns([1, 2])
+    with pre1:
+        term = term_select("Term", key="stu_add_term", years=years)
+    with pre2:
+        add_guardian_mode = guardian_mode_selector("stu_add")
+    tuition_plans = fee_service.list_plans(term.id, fee_type=FeeType.TUITION.value, active_only=True) if term else []
+    van_plans = fee_service.list_plans(term.id, fee_type=FeeType.VAN.value, active_only=True) if term else []
     with st.form("stu_add", clear_on_submit=False):
         st.markdown("##### Student")
         a1, a2, a3 = st.columns(3)
@@ -247,20 +253,23 @@ with tab_add:
         admission_no = b2.text_input("Admission number", placeholder="Leave blank to auto-number")
         notes = b3.text_input("Notes")
 
-        st.markdown("##### Class for the term")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            term = term_select(key="stu_add_term", years=years)
-        student_class = c2.selectbox("Class *", CLASSES, index=None)
-        section = c3.selectbox("Section *", SECTIONS)
-        roll_no = c4.number_input("Roll no (0 = assign later)", min_value=0, value=0, step=1)
+        st.markdown(f"##### Class and fees for {term.label if term else 'the term'}")
+        c1, c2, c3 = st.columns(3)
+        student_class = c1.selectbox("Class *", CLASSES, index=None)
+        section = c2.selectbox("Section *", SECTIONS)
+        roll_no = c3.number_input("Roll no (0 = assign later)", min_value=0, value=0, step=1)
+        p1, p2 = st.columns(2)
+        tuition_plan = p1.selectbox(
+            "Tuition fee plan", [None] + tuition_plans,
+            format_func=lambda p: "Default plan for the class and category" if p is None
+            else f"{p.code} ({p.student_class}{', ' + p.category if p.category else ''}) - {rupees(p.annual_amount_paise)}")
+        van_plan = p2.selectbox("Van", [None] + van_plans, format_func=lambda p: "No van" if p is None
+                                else f"{p.code} - {rupees(p.annual_amount_paise)} per year")
 
-        st.markdown("##### Van and Aadhaar")
-        v1, v2, v3 = st.columns(3)
-        with v1:
-            van = rupee_input("Monthly van fee (0 = no van)", key="stu_add_van")
-        full_aadhaar = v2.text_input("Aadhaar number (12 digits, stored encrypted)")
-        last4 = v3.text_input("...or only last 4 digits", max_chars=4)
+        st.markdown("##### Aadhaar")
+        v1, v2 = st.columns(2)
+        full_aadhaar = v1.text_input("Aadhaar number (12 digits, stored encrypted)")
+        last4 = v2.text_input("...or only last 4 digits", max_chars=4)
 
         st.markdown(f"##### Guardian ({add_guardian_mode.lower()})")
         guardian = guardian_picker("stu_add", add_guardian_mode)
@@ -279,7 +288,8 @@ with tab_add:
                 class_joined=student_class, admission_no=admission_no, notes=notes,
                 enrollment={"academic_year_id": term.id, "student_class": student_class,
                             "section": section, "roll_no": roll_no or None},
-                van_monthly_paise=van or None,
+                tuition_plan_id=tuition_plan.id if tuition_plan else None,
+                van_plan_id=van_plan.id if van_plan else None,
                 identifier={"full_number": full_aadhaar, "last_4_digits": last4}
                 if (full_aadhaar.strip() or last4.strip()) else None,
                 guardians=[{**guardian, "is_primary": True}] if guardian and not guardian_problem else [],
@@ -292,6 +302,10 @@ with tab_add:
             created = run_action(student_service.create_student, data)
             if created:
                 flash(f"Added {created.name} (admission no {created.admission_no}).")
+                fees = fee_service.get_ledger(created.enrollments[0].enrollment_id)
+                if not any(d.fee_type == FeeType.TUITION.value for d in fees):
+                    flash("No default tuition plan matches this class and category - assign one in "
+                          "Admin > Fee plans or on Collect fees.", "warning")
                 st.session_state[KEY_SELECTED] = created.student_id
                 st.rerun()
 

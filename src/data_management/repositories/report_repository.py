@@ -7,11 +7,10 @@ from sqlalchemy import text
 from sqlmodel import Session
 
 _DUES_SQL = """
-SELECT v.fee_due_id, v.enrollment_id, v.student_id, v.academic_year_id, v.student_class, v.section,
-       v.fee_type, v.fee_month, v.description, v.amount_due_paise, v.amount_paid_paise, v.balance_paise,
-       substr(d.inserted_on, 1, 10) AS created_on
-  FROM v_fee_due_status v JOIN student_fee_due d ON d.id = v.fee_due_id
- WHERE v.academic_year_id = :year_id
+SELECT fee_due_id, enrollment_id, student_id, academic_year_id, student_class, section, fee_type, fee_plan_id,
+       plan_code, description, amount_due_paise, amount_paid_paise, balance_paise, created_on
+  FROM v_fee_due_status
+ WHERE academic_year_id = :year_id
 """
 
 _ENROLLMENTS_SQL = """
@@ -42,11 +41,12 @@ SELECT p.id AS payment_id, p.receipt_no, p.paid_on, p.amount_paise, p.payment_me
 """
 
 _ALLOCATIONS_SQL = """
-SELECT a.payment_id, p.receipt_no, p.paid_on, p.student_id, e.academic_year_id,
-       d.fee_type, d.fee_month, d.description, a.amount_paise
+SELECT a.payment_id, a.fee_due_id, p.receipt_no, p.paid_on, p.student_id, e.academic_year_id,
+       d.fee_type, d.description, fp.code AS plan_code, a.amount_paise
   FROM payment_allocation a
   JOIN payment p ON p.id = a.payment_id AND p.is_voided = 0
   JOIN student_fee_due d ON d.id = a.fee_due_id
+  LEFT JOIN fee_plan fp ON fp.id = d.fee_plan_id
   JOIN student_enrollment e ON e.id = p.enrollment_id
  WHERE (:year_id IS NULL OR e.academic_year_id = :year_id)
    AND (:date_from IS NULL OR p.paid_on >= :date_from)
@@ -85,3 +85,9 @@ def allocations(session: Session, year_id: Optional[int] = None, date_from: Opti
 
 def years(session: Session) -> pd.DataFrame:
     return _frame(session, "SELECT id, label, start_date, end_date, is_current FROM academic_year ORDER BY start_date", {})
+
+
+def milestones(session: Session, year_id: int) -> list:
+    return [(date.fromisoformat(row[0]), row[1]) for row in session.execute(
+        text("SELECT due_date, cumulative_percent FROM fee_milestone WHERE academic_year_id = :y ORDER BY due_date"),
+        {"y": year_id})]

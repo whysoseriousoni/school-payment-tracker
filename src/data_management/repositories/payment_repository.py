@@ -22,10 +22,12 @@ SELECT p.*, s.name AS student_name, s.admission_no, y.label AS academic_year_lab
 """
 
 _ALLOCATIONS_SQL = """
-SELECT a.payment_id, a.fee_due_id, a.amount_paise, d.fee_type, d.fee_month, d.description
-  FROM payment_allocation a JOIN student_fee_due d ON d.id = a.fee_due_id
+SELECT a.payment_id, a.fee_due_id, a.amount_paise, d.fee_type, d.description, fp.code AS plan_code
+  FROM payment_allocation a
+  JOIN student_fee_due d ON d.id = a.fee_due_id
+  LEFT JOIN fee_plan fp ON fp.id = d.fee_plan_id
  WHERE a.payment_id IN ({ids})
- ORDER BY CASE WHEN d.fee_month IS NULL THEN 1 ELSE 0 END, d.fee_month, d.fee_type
+ ORDER BY CASE d.fee_type WHEN 'TUITION' THEN 0 WHEN 'VAN' THEN 1 ELSE 2 END, d.id
 """
 
 

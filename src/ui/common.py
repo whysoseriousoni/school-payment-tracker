@@ -64,6 +64,16 @@ def validation_messages(error: ValidationError) -> List[str]:
     return messages
 
 
+def error_text(error: Exception) -> str:
+    """User-facing text for an error raised by a DTO or service."""
+    if isinstance(error, ValidationError):
+        return "; ".join(validation_messages(error))
+    if isinstance(error, ServiceError):
+        return str(error)
+    logger.exception("Unexpected error", exc_info=error)
+    return "unexpected error (see log)"
+
+
 def run_action(action: Callable[..., Any], *args, **kwargs) -> Any:
     """Runs a service call and shows friendly errors. Returns None on failure."""
     try:

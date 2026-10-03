@@ -11,7 +11,7 @@ from helper.school_calendar import (
     next_class,
 )
 from helper.utils import get_index_or_default, get_or_default, has_value, sqlmodel_to_df
-from statics import CLASSES, ONE_OFF_FEE_TYPES, RECURRING_FEE_TYPES, FeeType
+from statics import CLASSES, ONE_OFF_FEE_TYPES, ANNUAL_FEE_TYPES, FeeType
 
 
 @pytest.mark.parametrize(
@@ -47,7 +47,7 @@ def test_class_progression():
 
 
 def test_fee_type_groups():
-    assert set(RECURRING_FEE_TYPES) == {FeeType.TUITION, FeeType.VAN}
+    assert set(ANNUAL_FEE_TYPES) == {FeeType.TUITION, FeeType.VAN}
     assert FeeType.BOOK in ONE_OFF_FEE_TYPES and FeeType.TUITION not in ONE_OFF_FEE_TYPES
     assert FeeType.TUITION.label == "Tuition Fee"
     assert FeeType.TUITION == "TUITION"
@@ -96,3 +96,20 @@ def test_get_index_or_default():
 def test_sqlmodel_to_df_empty_keeps_columns():
     frame = sqlmodel_to_df([], columns=["id", "name"])
     assert list(frame.columns) == ["id", "name"] and frame.empty
+
+
+def test_milestone_rule():
+    from helper import fee_rules
+
+    milestones = [(date(2026, 10, 31), 50), (date(2027, 3, 31), 100)]
+    end = date(2027, 5, 31)
+    assert fee_rules.expected_percent(milestones, date(2026, 10, 30), end) == 0
+    assert fee_rules.expected_percent(milestones, date(2026, 10, 31), end) == 50
+    assert fee_rules.expected_percent(milestones, date(2027, 4, 1), end) == 100
+    assert fee_rules.expected_percent([], date(2027, 5, 30), end) == 0
+    assert fee_rules.expected_percent([], end, end) == 100  # whole fee due by the end of term
+    assert fee_rules.expected_amount(1000001, 50) == 500001  # rounded up
+    assert fee_rules.overdue_amount(1000000, 600000, 50) == 0
+    assert fee_rules.overdue_amount(1000000, 200000, 50) == 300000
+    assert fee_rules.next_milestone(milestones, date(2026, 11, 1)) == (date(2027, 3, 31), 100)
+    assert fee_rules.next_milestone(milestones, date(2027, 4, 1)) is None

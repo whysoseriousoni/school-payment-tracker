@@ -102,7 +102,10 @@ def backup_database(
     source_path = Path(db_path or _active_db_path)
     target_dir = Path(destination_dir or BACKUP_DIR)
     target_dir.mkdir(parents=True, exist_ok=True)
-    target_path = target_dir / f"{source_path.stem}_{label}_{now_ist():%Y%m%d_%H%M%S_%f}.db"
+    stem = f"{source_path.stem}_{label}_{now_ist():%Y%m%d_%H%M%S_%f}"
+    target_path, counter = target_dir / f"{stem}.db", 2
+    while target_path.exists():  # never overwrite an earlier backup
+        target_path, counter = target_dir / f"{stem}_{counter}.db", counter + 1
 
     source = sqlite3.connect(source_path)
     destination = sqlite3.connect(target_path)

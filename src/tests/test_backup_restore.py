@@ -55,7 +55,7 @@ def test_db_restore_rejects_bad_files(backups):
 def test_excel_backup_restore_round_trip_with_voided_receipt(app_db, backups, connect):
     payment_service.void_payment(VoidRequest(payment_id=1, reason="Duplicate entry"), "admin")
     replacement_due = connect(app_db).execute(
-        "SELECT fee_due_id FROM v_fee_due_status WHERE student_id = 1 AND fee_month = '2026-06-01'").fetchone()[0]
+        "SELECT fee_due_id FROM v_fee_due_status WHERE student_id = 1 AND fee_type = 'TUITION'").fetchone()[0]
     from datetime import date
 
     from data_management.dto.payment import AllocationInput, PaymentCreate

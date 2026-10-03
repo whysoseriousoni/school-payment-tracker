@@ -62,7 +62,8 @@ pages = {
 }
 if user.is_admin:
     pages["Admin"] = [
-        st.Page("ui/admin/setup.py", title="Terms & fees", icon="⚙️"),
+        st.Page("ui/admin/setup.py", title="Terms & school", icon="⚙️"),
+        st.Page("ui/admin/fees.py", title="Fee plans", icon="🏷️"),
         st.Page("ui/admin/promotion.py", title="Promotion", icon="🎓"),
         st.Page("ui/admin/users.py", title="Users", icon="🔑"),
         st.Page("ui/admin/backup.py", title="Backup & restore", icon="💾"),

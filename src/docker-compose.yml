@@ -10,7 +10,6 @@ services:
       - ./secrets:/app/secrets         # identifier.key - back this up separately!
       - ./logs:/app/logs
     environment:
-      SPT_FEE_DUE_DAY: "${SPT_FEE_DUE_DAY:-10}"
       SPT_SMTP_HOST: "${SPT_SMTP_HOST:-}"
       SPT_SMTP_PORT: "${SPT_SMTP_PORT:-587}"
       SPT_SMTP_USER: "${SPT_SMTP_USER:-}"

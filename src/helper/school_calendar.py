@@ -53,17 +53,6 @@ def next_class(current_class: str) -> Optional[str]:
     return CLASSES[position + 1]
 
 
-def last_overdue_month(as_of: date, due_day: int) -> date:
-    """
-    Latest fee month that is overdue on `as_of`: a month's fee falls due on
-    `due_day` of that month. E.g. due_day=10: on 3 Oct -> September, on 10 Oct -> October.
-    """
-    month_start = as_of.replace(day=1)
-    if as_of.day >= due_day:
-        return month_start
-    return date(month_start.year - (month_start.month == 1), (month_start.month - 2) % 12 + 1, 1)
-
-
 def financial_year_bounds(start_year: int) -> Tuple[date, date]:
     """Financial year April `start_year` -> March `start_year + 1`."""
     return date(start_year, 4, 1), date(start_year + 1, 3, 31)

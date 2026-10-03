@@ -96,7 +96,8 @@ class EnrollmentInput(DTO):
 
 class StudentCreate(StudentBase):
     enrollment: EnrollmentInput
-    van_monthly_paise: Optional[int] = Field(default=None, ge=0, description="None = no van")
+    tuition_plan_id: Optional[int] = Field(default=None, description="None = default plan for class + category")
+    van_plan_id: Optional[int] = Field(default=None, description="None = no van")
     identifier: Optional[IdentifierInput] = None
     guardians: List[GuardianLinkInput] = Field(default_factory=list)
 

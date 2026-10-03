@@ -1,7 +1,8 @@
 from pydantic import NaiveDatetime
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
 from data_management.dao.base import TableBase
+
 from helper.clock import now_ist
 
 

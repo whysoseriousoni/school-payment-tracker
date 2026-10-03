@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 def suggest_allocation(open_dues: Iterable[FeeDueRead], amount_paise: int,
                        fee_types: Optional[Iterable[str]] = None) -> List[AllocationInput]:
-    """Spreads `amount_paise` over the oldest unpaid dues first (dues arrive oldest-first)."""
+    """Spreads `amount_paise` over pending dues in ledger order (tuition, van, then other fees)."""
     wanted = set(fee_types) if fee_types else None
     remaining = amount_paise
     allocations = []
@@ -39,8 +39,7 @@ def _to_read(row: dict, allocation_rows: List[dict]) -> PaymentRead:
     allocations = [
         AllocationRead(
             fee_due_id=a["fee_due_id"], amount_paise=a["amount_paise"],
-            label=due_label(a["fee_type"], date.fromisoformat(a["fee_month"]) if a["fee_month"] else None,
-                            a["description"]),
+            label=due_label(a["fee_type"], a["description"], a["plan_code"]),
         )
         for a in allocation_rows if a["payment_id"] == row["id"]
     ]
@@ -65,7 +64,7 @@ def create_payment(data: PaymentCreate, collected_by: str) -> PaymentRead:
             balance = due.amount_due_paise - fee_repository.paid_amount(session, due.id)
             if allocation.amount_paise > balance:
                 raise BusinessRuleError(
-                    f"{due_label(due.fee_type, due.fee_month, due.description)}: only {format_inr(balance)} is pending"
+                    f"{due_label(due.fee_type, due.description)}: only {format_inr(balance)} is pending"
                 )
 
         year = session.get(AcademicYear, enrollment.academic_year_id)

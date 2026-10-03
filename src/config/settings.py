@@ -30,9 +30,6 @@ RECEIPT_PREFIX: str = "RCPT"
 SECRETS_DIR: Path = Path(os.environ.get("SPT_SECRETS_DIR", PROJECT_ROOT / "secrets"))
 IDENTIFIER_KEY_PATH: Path = SECRETS_DIR / "identifier.key"
 
-# A month's fee becomes overdue on this day of the month.
-FEE_DUE_DAY: int = int(os.environ.get("SPT_FEE_DUE_DAY", "10"))
-
 # Automatic backups.
 AUTO_BACKUP_INTERVAL_DAYS: int = 7
 AUTO_BACKUP_KEEP: int = 12

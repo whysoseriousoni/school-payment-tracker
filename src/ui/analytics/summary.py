@@ -2,7 +2,6 @@ from datetime import timedelta
 
 import streamlit as st
 
-from config.settings import FEE_DUE_DAY
 from data_management.services import academic_year_service, report_service, settings_service
 from data_management.services.report_service import ReportFilter
 from helper.clock import today_ist
@@ -11,7 +10,8 @@ from statics import CLASSES, SECTIONS, STUDENT_CATEGORY
 from ui.common import optional_select, page_header, require_user, rupees, term_select
 
 user = require_user()
-page_header("Summary", f"Monthly fees become overdue on the {FEE_DUE_DAY}th of each month.")
+page_header("Summary", "Fees are paid in instalments; a student is overdue when they are behind the "
+                       "term's payment milestones (e.g. 50% by 31 Oct).")
 
 years = academic_year_service.list_years()
 f1, f2, f3, f4, f5 = st.columns([2, 1, 1, 1.5, 2])
@@ -33,36 +33,41 @@ report_filter = ReportFilter(academic_year_id=term.id, as_of=as_of, student_clas
                              category=category)
 summary = report_service.dashboard(report_filter)
 
+next_milestone = summary["next_milestone"]
+st.caption(f"As of {summary['as_of']:%d %b %Y}, {summary['expected_percent']}% of annual fees should be paid."
+           + (f" Next milestone: {next_milestone[1]}% by {next_milestone[0]:%d %b %Y}." if next_milestone else "")
+           + ("" if summary["has_milestones"] else " No milestones set for this term (Admin > Fee plans)."))
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Students enrolled", summary["enrolled"])
-k2.metric("Paid up", summary["paid_up"])
-k3.metric("Have overdue fees", summary["defaulters"])
-k4.metric("No fees set", summary["no_fees"])
+k2.metric("On track / paid up", summary["paid_up"])
+k3.metric("Behind schedule", summary["defaulters"])
+k4.metric("No fee plan", summary["no_fees"])
 k5, k6, k7, k8 = st.columns(4)
-k5.metric("Collected so far", rupees(summary["collected_paise"]))
-k6.metric("Overdue now", rupees(summary["overdue_paise"]))
-k7.metric("Still to collect this term", rupees(summary["remaining_paise"]))
-k8.metric("Expected for term", rupees(summary["expected_paise"]))
+k5.metric("Collected", rupees(summary["collected_paise"]))
+k6.metric(f"Expected by now ({summary['expected_percent']}%)", rupees(summary["expected_by_now_paise"]))
+k7.metric("Overdue", rupees(summary["overdue_paise"]))
+k8.metric("Still to collect this term", rupees(summary["remaining_paise"]))
 
 tab_trend, tab_defaulters, tab_breakdown, tab_compare, tab_range = st.tabs(
     ["Trends", "Not paid", "Breakdowns", "Term comparison", "Custom date range"])
 
 with tab_trend:
     trend = report_service.monthly_trend(report_filter)
-    st.markdown("##### Fees due vs paid, by fee month")
-    st.bar_chart(trend.set_index("Month")[["Due", "Paid against month"]], stack=False, x_label="", y_label="₹")
-    st.markdown("##### Money collected, by payment month")
-    st.line_chart(trend.set_index("Month")[["Collected in month"]], x_label="", y_label="₹")
+    st.markdown("##### Collected so far vs expected by the milestones")
+    st.line_chart(trend.set_index("Month")[["Collected so far", "Expected by month end"]], x_label="", y_label="₹")
+    st.markdown("##### Money collected each month")
+    st.bar_chart(trend.set_index("Month")[["Collected in month"]], x_label="", y_label="₹")
 
 with tab_defaulters:
     defaulters = report_service.defaulters(report_filter)
-    st.markdown(f"##### {len(defaulters)} students with overdue fees in {term.label} (as of {as_of:%d %b %Y})")
+    st.markdown(f"##### {len(defaulters)} students behind schedule in {term.label} (as of {as_of:%d %b %Y})")
     if defaulters.empty:
         st.success("Nobody has overdue fees for this selection.")
     else:
         st.dataframe(defaulters, hide_index=True, width="stretch",
                      column_config={c: st.column_config.NumberColumn(format="₹%.2f")
-                                    for c in ("Overdue (Rs)", "Balance for year (Rs)")})
+                                    for c in ("Due (Rs)", "Paid (Rs)", "Balance (Rs)", "Expected by now (Rs)",
+                                              "Overdue (Rs)")})
         school = settings_service.get_settings()[settings_service.SCHOOL_NAME]
         st.download_button(
             "Download as Excel",

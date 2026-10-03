@@ -20,8 +20,8 @@ GUARDIAN_TYPES = ["MOTHER", "FATHER", "GUARDIAN", "BROTHER", "SISTER", "COUSIN",
 
 PAYMENT_METHODS = ["CASH", "UPI", "CARD"]
 
-# Fee months of the school operation year, in order.
-FEE_MONTH_NAMES = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"]
+# Parents may pay in instalments; after this many receipts in a term the biller is warned.
+RECEIPT_SOFT_LIMIT = 12
 
 
 class FeeType(str, Enum):
@@ -37,8 +37,8 @@ class FeeType(str, Enum):
         return FEE_TYPE_LABELS[self]
 
     @property
-    def is_recurring(self) -> bool:
-        return self in RECURRING_FEE_TYPES
+    def is_annual(self) -> bool:
+        return self in ANNUAL_FEE_TYPES
 
 
 FEE_TYPE_LABELS = {
@@ -50,10 +50,10 @@ FEE_TYPE_LABELS = {
     FeeType.CUSTOM: "Custom Fee",
 }
 
-# Recurring fees create one due row per month (Jun -> May). Must match the
-# CHECK constraint on student_fee_due in migration 001.
-RECURRING_FEE_TYPES = (FeeType.TUITION, FeeType.VAN)
-ONE_OFF_FEE_TYPES = tuple(fee_type for fee_type in FeeType if fee_type not in RECURRING_FEE_TYPES)
+# Annual fees come from a fee plan (one due per student per term, paid in any
+# instalments). Must match the CHECK constraints in migration 004.
+ANNUAL_FEE_TYPES = (FeeType.TUITION, FeeType.VAN)
+ONE_OFF_FEE_TYPES = tuple(fee_type for fee_type in FeeType if fee_type not in ANNUAL_FEE_TYPES)
 
 
 class StudentStatus(str, Enum):

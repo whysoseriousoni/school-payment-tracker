@@ -11,7 +11,7 @@ page_header(school[settings_service.SCHOOL_NAME], f"Fee tracker · {today_ist():
 
 year = academic_year_service.get_current_year()
 if year is None:
-    st.warning("No current term is set. An administrator can set one in Admin > Terms & fees.")
+    st.warning("No current term is set. An administrator can set one in Admin > Terms & school.")
     st.stop()
 
 summary = report_service.dashboard(ReportFilter(academic_year_id=year.id))
@@ -20,10 +20,13 @@ c1, c2, c3, c4 = st.columns(4)
 c1.metric("Collected today", rupees(summary["collected_today_paise"]))
 c2.metric("Collected this month", rupees(summary["collected_this_month_paise"]))
 c3.metric("Overdue now", rupees(summary["overdue_paise"]))
-c4.metric("Students with dues", f"{summary['defaulters']} of {summary['enrolled']}")
+c4.metric("Students behind schedule", f"{summary['defaulters']} of {summary['enrolled']}")
 if summary["no_fees"]:
-    st.info(f"{summary['no_fees']} enrolled students have no fees set - add the class fee in "
-            "Admin > Terms & fees and apply it.")
+    st.info(f"{summary['no_fees']} enrolled students have no fee plan for {year.label} - an administrator can "
+            "assign them in Admin > Fee plans > Assign to students.")
+if not summary["has_milestones"]:
+    st.info("No payment milestones are set for this term, so nobody counts as overdue until the term ends. "
+            "Set them in Admin > Fee plans > Payment milestones.")
 
 st.markdown("#### Quick actions")
 q1, q2, q3, q4 = st.columns(4)

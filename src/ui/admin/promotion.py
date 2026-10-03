@@ -40,8 +40,8 @@ if not candidates:
 
 final_class = candidates[0].next_class is None
 st.caption(("Class 10 students marked PROMOTED will be recorded as PASSED OUT. " if final_class else "")
-           + "Van is not carried over; opt students in again in the new term. "
-             "Tuition for the new term is created from its fee structure.")
+           + "Each student gets the new term's default tuition plan for their class and category. "
+             "Van is not carried over; assign it again in the new term.")
 table = pd.DataFrame({
     "Roll": [c.roll_no for c in candidates], "Name": [c.name for c in candidates],
     "Admission no": [c.admission_no for c in candidates],

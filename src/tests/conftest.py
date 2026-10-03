@@ -1,11 +1,21 @@
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 import pytest
 
 from data_management.migrations.runner import run_pending_migrations
+from helper import clock
 
 FIXTURES = Path(__file__).parent / "fixtures"
+FROZEN_NOW = datetime(2027, 1, 15, 10, 0)  # mid-term 2026-27, so tests never depend on the real date
+
+
+@pytest.fixture(autouse=True)
+def frozen_clock():
+    clock.freeze(FROZEN_NOW)
+    yield
+    clock.freeze(None)
 
 
 def _connect(path: Path) -> sqlite3.Connection:

@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 
 from data_management.dao import (
     AcademicYear,
+    FeePlan,
     Identifier,
     Student,
     StudentEnrollment,
@@ -42,6 +43,13 @@ def _get_student(session: Session, student_id: int) -> Student:
     if student is None:
         raise NotFoundError(f"Student {student_id} not found")
     return student
+
+
+def _get_plan(session: Session, plan_id: int) -> FeePlan:
+    plan = session.get(FeePlan, plan_id)
+    if plan is None:
+        raise NotFoundError("Fee plan not found")
+    return plan
 
 
 def _check_admission_no_free(session: Session, admission_no: str, student_id: Optional[int] = None) -> None:
@@ -167,10 +175,14 @@ def create_student(data: StudentCreate) -> StudentProfile:
         session.add(enrollment)
         session.flush()
 
-        from_month = fee_service.dues_start_month(year, data.date_of_join)
-        fee_service.generate_tuition_from_structure(session, enrollment, from_month)
-        if data.van_monthly_paise:
-            fee_service.generate_recurring_dues(session, enrollment, FeeType.VAN.value, data.van_monthly_paise, from_month)
+        if data.tuition_plan_id:
+            fee_service.assign_in_session(session, enrollment, FeeType.TUITION.value,
+                                          plan=_get_plan(session, data.tuition_plan_id))
+        else:
+            fee_service.assign_default_tuition(session, enrollment, data.category)
+        if data.van_plan_id:
+            fee_service.assign_in_session(session, enrollment, FeeType.VAN.value,
+                                          plan=_get_plan(session, data.van_plan_id))
 
         for link in data.guardians:
             guardian_service.link_in_session(session, student.id, link)
@@ -198,7 +210,7 @@ def enroll_existing_student(student_id: int, academic_year_id: int, student_clas
                                        student_class=data.student_class, section=data.section, roll_no=data.roll_no)
         session.add(enrollment)
         session.flush()
-        fee_service.generate_tuition_from_structure(session, enrollment)
+        fee_service.assign_default_tuition(session, enrollment, student.category)
         return next(EnrollmentRead(**row) for row in repo.enrollments_of(session, student_id)
                     if row["enrollment_id"] == enrollment.id)
 
@@ -243,28 +255,28 @@ def update_enrollment(enrollment_id: int, data: EnrollmentUpdate) -> None:
 
 
 def change_class(enrollment_id: int, new_class: str) -> None:
-    """Corrects a wrong class. Allowed only while no tuition has been paid for the year."""
+    """Corrects a wrong class. Allowed only while no tuition has been paid; the default plan is re-assigned."""
     from statics import CLASSES
 
     if new_class not in CLASSES:
         raise BusinessRuleError("Unknown class")
     with session_scope() as session:
         enrollment = fee_service.get_enrollment(session, enrollment_id)
-        tuition = fee_repository.recurring_dues(session, enrollment_id, FeeType.TUITION.value)
-        if any(fee_repository.has_allocations(session, due.id) for due in tuition):
+        tuition = fee_repository.annual_due(session, enrollment_id, FeeType.TUITION.value)
+        if tuition and fee_repository.has_allocations(session, tuition.id):
             raise BusinessRuleError("Tuition has already been paid this year; the class cannot be changed")
-        first_month = tuition[0].fee_month if tuition else None
-        for due in tuition:
-            session.delete(due)
+        if tuition:
+            session.delete(tuition)
         enrollment.student_class = new_class
         enrollment.roll_no = None
         session.add(enrollment)
         session.flush()
-        fee_service.generate_tuition_from_structure(session, enrollment, first_month)
+        student = session.get(Student, enrollment.student_id)
+        fee_service.assign_default_tuition(session, enrollment, student.category)
 
 
 def mark_left(student_id: int, data: StudentLeaving) -> dict:
-    """Marks a student as left / passed out and stops recurring fees after the leaving month."""
+    """Marks a student as left / passed out. Annual fees stop at what has been paid so far."""
     with session_scope() as session:
         student = _get_student(session, student_id)
         student.status = data.status
@@ -273,13 +285,12 @@ def mark_left(student_id: int, data: StudentLeaving) -> dict:
         result = {"removed": 0, "trimmed": 0}
         open_enrollments = session.exec(select(StudentEnrollment).where(
             StudentEnrollment.student_id == student_id, StudentEnrollment.outcome.is_(None))).all()
-        stop_from = fee_service.first_of_month(data.date_of_leaving)
-        stop_from = stop_from.replace(year=stop_from.year + (stop_from.month == 12), month=stop_from.month % 12 + 1)
+        reason = f"{data.status.replace('_', ' ').title()} on {data.date_of_leaving:%d %b %Y}"
         for enrollment in open_enrollments:
             enrollment.outcome = (EnrollmentOutcome.PASSED_OUT.value if data.status == StudentStatus.PASSED_OUT.value
                                   else EnrollmentOutcome.LEFT.value)
             session.add(enrollment)
-            outcome = fee_service.remove_or_trim_recurring_dues(session, enrollment.id, stop_from)
+            outcome = fee_service.stop_annual_fees(session, enrollment.id, reason)
             result = {key: result[key] + outcome[key] for key in result}
         return result
 

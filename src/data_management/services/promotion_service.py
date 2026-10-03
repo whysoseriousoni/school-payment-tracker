@@ -78,7 +78,7 @@ def promote(request: PromotionRequest) -> PromotionResult:
                                                    student_class=target_class, section=decision.target_section)
                 session.add(new_enrollment)
                 session.flush()
-                fee_service.generate_tuition_from_structure(session, new_enrollment)
+                fee_service.assign_default_tuition(session, new_enrollment, student.category)
             session.add(enrollment)
             session.add(student)
         session.flush()

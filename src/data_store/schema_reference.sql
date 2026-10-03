@@ -29,16 +29,32 @@ CREATE TABLE app_user (
     updated_on    DATETIME NOT NULL
 );
 
-CREATE TABLE fee_structure (
-    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
-    academic_year_id     INTEGER NOT NULL REFERENCES academic_year (id) ON DELETE RESTRICT,
-    student_class        TEXT    NOT NULL,
-    fee_type             TEXT    NOT NULL CHECK (fee_type IN ('TUITION', 'VAN')),
-    monthly_amount_paise INTEGER NOT NULL CHECK (monthly_amount_paise >= 0),
-    is_active            INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
-    inserted_on          DATETIME NOT NULL,
-    updated_on           DATETIME NOT NULL,
-    UNIQUE (academic_year_id, student_class, fee_type)
+CREATE TABLE fee_milestone (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    academic_year_id   INTEGER NOT NULL REFERENCES academic_year (id) ON DELETE CASCADE,
+    due_date           DATE    NOT NULL,
+    cumulative_percent INTEGER NOT NULL CHECK (cumulative_percent BETWEEN 1 AND 100),
+    inserted_on        DATETIME NOT NULL,
+    updated_on         DATETIME NOT NULL,
+    UNIQUE (academic_year_id, due_date)
+);
+
+CREATE TABLE fee_plan (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    academic_year_id    INTEGER NOT NULL REFERENCES academic_year (id) ON DELETE RESTRICT,
+    code                TEXT    NOT NULL COLLATE NOCASE CHECK (trim(code) <> ''),
+    fee_type            TEXT    NOT NULL CHECK (fee_type IN ('TUITION', 'VAN')),
+    student_class       TEXT,
+    category            TEXT,
+    annual_amount_paise INTEGER NOT NULL CHECK (annual_amount_paise >= 0),
+    is_default          INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+    is_active           INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+    description         TEXT,
+    inserted_on         DATETIME NOT NULL,
+    updated_on          DATETIME NOT NULL,
+    UNIQUE (academic_year_id, code),
+    CHECK (fee_type <> 'TUITION' OR student_class IS NOT NULL),
+    CHECK (is_default = 0 OR is_active = 1)
 );
 
 CREATE TABLE guardian (
@@ -84,7 +100,7 @@ CREATE TABLE payment (
     CHECK (is_voided = 0 OR (void_reason IS NOT NULL AND trim(void_reason) <> ''))
 );
 
-CREATE TABLE payment_allocation (
+CREATE TABLE "payment_allocation" (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     payment_id   INTEGER NOT NULL REFERENCES payment (id) ON DELETE CASCADE,
     fee_due_id   INTEGER NOT NULL REFERENCES student_fee_due (id) ON DELETE RESTRICT,
@@ -129,18 +145,20 @@ CREATE TABLE student_enrollment (
     UNIQUE (academic_year_id, student_class, section, roll_no)
 );
 
-CREATE TABLE student_fee_due (
+CREATE TABLE "student_fee_due" (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     enrollment_id    INTEGER NOT NULL REFERENCES student_enrollment (id) ON DELETE RESTRICT,
     fee_type         TEXT    NOT NULL,
-    fee_month        DATE,
+    fee_plan_id      INTEGER REFERENCES fee_plan (id) ON DELETE RESTRICT,
     description      TEXT,
+    override_reason  TEXT,
     amount_due_paise INTEGER NOT NULL CHECK (amount_due_paise >= 0),
     inserted_on      DATETIME NOT NULL,
     updated_on       DATETIME NOT NULL,
-    -- Recurring fees are monthly; every other fee type is a one-off charge.
-    CHECK ((fee_type IN ('TUITION', 'VAN')) = (fee_month IS NOT NULL)),
-    CHECK (fee_month IS NULL OR strftime('%d', fee_month) = '01')
+    -- Only annual fees (tuition, van) come from a plan; they need a plan or a reason for a custom amount.
+    CHECK (fee_type IN ('TUITION', 'VAN') OR fee_plan_id IS NULL),
+    CHECK (fee_type NOT IN ('TUITION', 'VAN') OR fee_plan_id IS NOT NULL
+           OR (override_reason IS NOT NULL AND trim(override_reason) <> ''))
 );
 
 CREATE TABLE student_guardian (
@@ -158,7 +176,9 @@ CREATE INDEX ix_allocation_fee_due ON payment_allocation (fee_due_id);
 
 CREATE INDEX ix_enrollment_year_class ON student_enrollment (academic_year_id, student_class, section);
 
-CREATE INDEX ix_fee_due_month ON student_fee_due (fee_month);
+CREATE INDEX ix_fee_due_enrollment ON student_fee_due (enrollment_id);
+
+CREATE INDEX ix_fee_due_plan ON student_fee_due (fee_plan_id);
 
 CREATE INDEX ix_guardian_mobile ON guardian (mobile_number);
 
@@ -174,8 +194,10 @@ CREATE INDEX ix_student_name ON student (name COLLATE NOCASE);
 
 CREATE UNIQUE INDEX ux_academic_year_single_current ON academic_year (is_current) WHERE is_current = 1;
 
-CREATE UNIQUE INDEX ux_fee_due_recurring ON student_fee_due (enrollment_id, fee_type, fee_month)
-    WHERE fee_month IS NOT NULL;
+CREATE UNIQUE INDEX ux_fee_due_annual ON student_fee_due (enrollment_id, fee_type) WHERE fee_type IN ('TUITION', 'VAN');
+
+CREATE UNIQUE INDEX ux_fee_plan_one_default ON fee_plan
+    (academic_year_id, fee_type, COALESCE(student_class, ''), COALESCE(category, '')) WHERE is_default = 1;
 
 CREATE UNIQUE INDEX ux_identifier_fingerprint ON identifier (fingerprint) WHERE fingerprint IS NOT NULL;
 
@@ -220,6 +242,26 @@ BEGIN
     SELECT RAISE(ABORT, 'Amount due cannot be reduced below the amount already paid');
 END;
 
+CREATE TRIGGER trg_fee_due_plan_matches_insert
+BEFORE INSERT ON student_fee_due
+WHEN NEW.fee_plan_id IS NOT NULL
+BEGIN
+    SELECT RAISE(ABORT, 'Fee plan does not match this fee type or term')
+    WHERE NOT EXISTS (
+        SELECT 1 FROM fee_plan fp JOIN student_enrollment e ON e.id = NEW.enrollment_id
+         WHERE fp.id = NEW.fee_plan_id AND fp.fee_type = NEW.fee_type AND fp.academic_year_id = e.academic_year_id);
+END;
+
+CREATE TRIGGER trg_fee_due_plan_matches_update
+BEFORE UPDATE OF fee_plan_id ON student_fee_due
+WHEN NEW.fee_plan_id IS NOT NULL
+BEGIN
+    SELECT RAISE(ABORT, 'Fee plan does not match this fee type or term')
+    WHERE NOT EXISTS (
+        SELECT 1 FROM fee_plan fp JOIN student_enrollment e ON e.id = NEW.enrollment_id
+         WHERE fp.id = NEW.fee_plan_id AND fp.fee_type = NEW.fee_type AND fp.academic_year_id = e.academic_year_id);
+END;
+
 CREATE TRIGGER trg_payment_core_fields_immutable
 BEFORE UPDATE OF student_id, enrollment_id, amount_paise, receipt_no ON payment
 WHEN NEW.student_id <> OLD.student_id OR NEW.enrollment_id <> OLD.enrollment_id
@@ -249,14 +291,18 @@ SELECT d.id                 AS fee_due_id,
        e.student_class,
        e.section,
        d.fee_type,
-       d.fee_month,
+       d.fee_plan_id,
+       fp.code              AS plan_code,
        d.description,
+       d.override_reason,
        d.amount_due_paise,
        COALESCE(SUM(CASE WHEN p.is_voided = 0 THEN a.amount_paise END), 0) AS amount_paid_paise,
        d.amount_due_paise
-         - COALESCE(SUM(CASE WHEN p.is_voided = 0 THEN a.amount_paise END), 0) AS balance_paise
+         - COALESCE(SUM(CASE WHEN p.is_voided = 0 THEN a.amount_paise END), 0) AS balance_paise,
+       substr(d.inserted_on, 1, 10) AS created_on
   FROM student_fee_due d
   JOIN student_enrollment e ON e.id = d.enrollment_id
+  LEFT JOIN fee_plan fp ON fp.id = d.fee_plan_id
   LEFT JOIN payment_allocation a ON a.fee_due_id = d.id
   LEFT JOIN payment p ON p.id = a.payment_id
  GROUP BY d.id;

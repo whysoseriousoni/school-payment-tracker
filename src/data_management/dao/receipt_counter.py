@@ -1,4 +1,4 @@
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
 from data_management.dao.base import TableBase
 

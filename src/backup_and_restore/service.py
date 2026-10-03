@@ -34,7 +34,7 @@ AUTO_LABEL = "weekly"
 # Parent tables first: the order used for inserting during an Excel restore.
 TABLE_ORDER = [
     "academic_year", "identifier", "student", "guardian", "student_guardian", "student_enrollment",
-    "fee_structure", "student_fee_due", "receipt_counter", "payment", "payment_allocation",
+    "fee_plan", "fee_milestone", "student_fee_due", "receipt_counter", "payment", "payment_allocation",
     "app_user", "app_setting",
 ]
 _DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"

@@ -8,7 +8,8 @@ from data_management.dao import (
     AcademicYear,
     AppSetting,
     AppUser,
-    FeeStructure,
+    FeeMilestone,
+    FeePlan,
     Guardian,
     Identifier,
     Payment,
@@ -21,7 +22,7 @@ from data_management.dao import (
 )
 from data_management.sql_manager import session_scope
 
-MODELS = [AcademicYear, AppSetting, AppUser, FeeStructure, Guardian, Identifier, Payment, PaymentAllocation,
+MODELS = [AcademicYear, AppSetting, AppUser, FeeMilestone, FeePlan, Guardian, Identifier, Payment, PaymentAllocation,
           ReceiptCounter, Student, StudentEnrollment, StudentFeeDue, StudentGuardian]
 
 
